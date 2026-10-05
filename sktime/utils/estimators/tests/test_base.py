@@ -2,9 +2,12 @@
 
 __author__ = ["ltsaprounis"]
 
+from functools import lru_cache
+
 import pytest
 from pandas.testing import assert_series_equal
 
+from sktime.base import BaseEstimator
 from sktime.classification.base import BaseClassifier
 from sktime.clustering.base import BaseClusterer
 from sktime.datasets import load_airline
@@ -206,3 +209,25 @@ def test_make_mock_estimator_with_kwargs(estimator_class, estimator_kwargs):
         and (mock_estimator_instance.sp == estimator_kwargs["sp"])
         and (mock_estimator_instance.window_length == estimator_kwargs["window_length"])
     )
+
+
+def test_make_mock_estimator_with_naive_forecaster():
+    """Test the documented make_mock_estimator example."""
+    mock_estimator = make_mock_estimator(NaiveForecaster)
+    assert mock_estimator is not None
+
+
+def test_make_mock_estimator_handles_cached_static_method():
+    """Test that cached static methods are not logged."""
+
+    class _DummyEstimator(BaseEstimator):
+        @staticmethod
+        @lru_cache
+        def _cached_static_method():
+            return None
+
+    mock_estimator = make_mock_estimator(_DummyEstimator)()
+    initial_log = mock_estimator.log.copy()
+    mock_estimator._cached_static_method()
+
+    assert mock_estimator.log == initial_log

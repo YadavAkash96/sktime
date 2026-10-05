@@ -5,7 +5,7 @@ __author__ = ["ltsaprounis"]
 import re
 from copy import deepcopy
 from functools import wraps
-from inspect import getcallargs, getfullargspec
+from inspect import getcallargs, signature
 
 from sktime.base import BaseEstimator
 
@@ -104,10 +104,9 @@ def make_mock_estimator(
         if not re.match(dunder_methods_regex, attr_name) and callable(attr):
             # match the given regex pattern
             # exclude static and class methods from logging
-            if (
-                re.match(method_regex, attr_name)
-                and "self" in getfullargspec(attr).args
-            ):
+            if not re.match(method_regex, attr_name):
+                continue
+            if "self" in signature(attr).parameters:
                 setattr(_MockEstimator, attr_name, _method_logger(attr))
 
     return _MockEstimator
